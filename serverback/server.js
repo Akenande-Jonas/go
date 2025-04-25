@@ -63,14 +63,12 @@ function authenticateToken(req, res, next) {
     });
 }
 
-// Fonctions utilitaires
 function calculerClassement(matchs) {
     const classement = {};
-  
+
     matchs.forEach(match => {
         const { Equipe1, Equipe2, Butequipe1, Butequipe2, nom_equipe1, nom_equipe2 } = match;
-  
-        // Initialiser les équipes dans le classement si elles n'existent pas
+
         if (!classement[Equipe1]) {
             classement[Equipe1] = {
                 id: Equipe1,
@@ -99,56 +97,53 @@ function calculerClassement(matchs) {
                 differenceButs: 0,
             };
         }
-  
-        // Mettre à jour les statistiques pour chaque équipe
+
         classement[Equipe1].matchsJoues += 1;
         classement[Equipe2].matchsJoues += 1;
-  
+
         classement[Equipe1].butsPour += Butequipe1;
         classement[Equipe1].butsContre += Butequipe2;
-        classement[Equipe1].differenceButs = classement[Equipe1].butsPour - classement[Equipe1].butsContre;
-  
+
         classement[Equipe2].butsPour += Butequipe2;
         classement[Equipe2].butsContre += Butequipe1;
-        classement[Equipe2].differenceButs = classement[Equipe2].butsPour - classement[Equipe2].butsContre;
-  
-        // Déterminer le résultat du match
+
+        // Résultat
         if (Butequipe1 > Butequipe2) {
-            // Équipe 1 gagne
             classement[Equipe1].points += 3;
             classement[Equipe1].gagne += 1;
             classement[Equipe2].perdu += 1;
         } else if (Butequipe2 > Butequipe1) {
-            // Équipe 2 gagne
             classement[Equipe2].points += 3;
             classement[Equipe2].gagne += 1;
             classement[Equipe1].perdu += 1;
         } else {
-            // Match nul
             classement[Equipe1].points += 1;
             classement[Equipe2].points += 1;
             classement[Equipe1].nul += 1;
             classement[Equipe2].nul += 1;
         }
+
+        classement[Equipe1].differenceButs = classement[Equipe1].butsPour - classement[Equipe1].butsContre;
+        classement[Equipe2].differenceButs = classement[Equipe2].butsPour - classement[Equipe2].butsContre;
     });
-  
-    // Convertir l'objet en tableau pour un classement plus lisible
+
     const classementArray = Object.values(classement);
-  
-    // Trier le classement selon les critères
+
     classementArray.sort((a, b) => {
-        if (b.points !== a.points) {
-            return b.points - a.points; // Tri par points décroissants
-        } else if (b.differenceButs !== a.differenceButs) {
-            return b.differenceButs - a.differenceButs; // Tri par différence de buts
-        } else {
-            return b.butsPour - a.butsPour; // Tri par buts marqués
-        }
+        if (b.points !== a.points) return b.points - a.points;
+        if (b.differenceButs !== a.differenceButs) return b.differenceButs - a.differenceButs;
+        return b.butsPour - a.butsPour;
     });
-  
+
+    // On ajoute le rang ici
+    classementArray.forEach((equipe, index) => {
+        equipe.rang = index + 1;
+    });
+
     return classementArray;
 }
 
+// Fonction pour déterminer le vainqueur d'un match
 function determinerVainqueur(matchs) {
     const vainqueurs = [];
 
@@ -386,6 +381,43 @@ app.delete('/admin/users/:id', (req, res) => {
 });
 
 // Routes pour l'administration
+app.get('/admin/connexion', (req, res) => {
+    const sql = "SELECT * FROM Admin";
+    bddConnection.query(sql, (err, result) => {
+        if (err) {
+            console.error("Erreur SQL :", err);
+            return res.status(500).json({ message: "Erreur serveur" });
+        }
+        if (result.length === 0) {
+            return res.status(404).json({ message: "Aucun admin trouvé" });
+        }
+        console.log("Admins récupérés :", result);
+        res.status(200).json(result);
+    });
+});
+
+app.get('/admin/connexion/:id', (req, res) => {
+    const id = req.params.id;
+    console.log("ID reçu :", id);
+    if (!bddConnection) {
+        console.error("Erreur : connexion à la base de données manquante.");
+        return res.status(500).json({ message: "Erreur serveur : connexion DB manquante" });
+    }
+    const sql = "SELECT * FROM Admin WHERE id = ?";
+    console.log("Requête SQL exécutée :", sql, "avec ID :", id);
+    bddConnection.query(sql, [id], (err, result) => {
+        if (err) {
+            console.error("Erreur SQL :", err);
+            return res.status(500).json({ message: "Erreur serveur" });
+        }
+        console.log("Résultat MySQL :", result);
+        if (result.length === 0) {
+            return res.status(404).json({ message: "Admin non trouvé" });
+        }
+        res.status(200).json(result[0]);
+    });
+});
+
 app.post('/admin/connexion', async (req, res) => {
     const { nom, mdp } = req.body;
 
@@ -523,6 +555,177 @@ app.get('/matchs', (req, res) => {
     });
 });
 
+// Route pour récupérer l'id d'un match spécifique
+app.get('/admin/matchs/:id', (req, res) => {
+    const id = req.params.id;
+    const query = `
+    SELECT
+        m.id,
+        m.Equipe1,
+        m.Equipe2,
+        m.Butequipe1,
+        m.Butequipe2,
+        e1.nom AS nom_equipe1,
+        e2.nom AS nom_equipe2
+    FROM
+        Matchs m
+    JOIN
+        equipe e1 ON m.Equipe1 = e1.id
+    JOIN
+        equipe e2 ON m.Equipe2 = e2.id
+    WHERE
+        m.id = ?;
+    `;
+    bddConnection.query(query, [id], (error, results, fields) => {
+        if (error) {
+            console.error("Erreur MySQL lors de la récupération du match :", error);
+            return res.status(500).json({ error: "Erreur lors de la récupération du match" });
+        }
+        if (results.length === 0) {
+            return res.status(404).json({ message: "Match non trouvé" });
+        }
+        res.json(results[0]);
+    }
+    );
+});
+
+app.post('/admin/matchs', (req, res) => {
+    const { Equipe1, Equipe2, Butequipe1, Butequipe2 } = req.body;
+    console.log("Données reçues pour le match :", req.body);
+    if (!Equipe1 || !Equipe2 || !Butequipe1 || !Butequipe2) {
+        return res.status(400).json({ error: "Tous les champs sont requis." });
+    }
+
+    const query = "INSERT INTO Matchs (Equipe1, Equipe2, Butequipe1, Butequipe2) VALUES (?, ?, ?, ?)";
+    bddConnection.query(query, [Equipe1, Equipe2, Butequipe1, Butequipe2], (err, result) => {
+        if (err) {
+            console.error("Erreur MySQL lors de l'ajout du match :", err);
+            return res.status(500).json({ error: "Erreur lors de l'ajout du match" });
+        }
+        console.log("Match ajouté avec succès, ID:", result.insertId);
+        res.status(201).json({
+            message: "Match ajouté avec succès !",
+            id: result.insertId,
+            Equipe1: Equipe1,
+            Equipe2: Equipe2,
+            Butequipe1: Butequipe1,
+            Butequipe2: Butequipe2
+        });
+    });
+});
+app.put('/admin/matchs/:id', (req, res) => {
+    const id = req.params.id;
+    const { Equipe1, Equipe2, Butequipe1, Butequipe2 } = req.body;
+    const query = "UPDATE Matchs SET Equipe1 = ?, Equipe2 = ?, Butequipe1 = ?, Butequipe2 = ? WHERE id = ?";
+    bddConnection.query(query, [Equipe1, Equipe2, Butequipe1, Butequipe2, id], (error, results, fields) => {
+        if (error) {
+            console.error("Erreur MySQL lors de la mise à jour du match :", error);
+            return res.status(500).json({ error: "Erreur lors de la mise à jour du match" });
+        }
+        if (results.affectedRows === 0) {
+            return res.status(404).json({ message: "Match non trouvé" });
+        }
+        res.json({ message: "Match mis à jour avec succès !" });
+    }
+    );
+});
+
+app.delete('/admin/matchs/:id', (req, res) => {
+    const id = req.params.id;
+    const query = "DELETE FROM Matchs WHERE id = ?";
+    bddConnection.query(query, [id], (error, results, fields) => {
+        if (error) {
+            console.error("Erreur MySQL lors de la suppression du match :", error);
+            return res.status(500).json({ error: "Erreur lors de la suppression du match" });
+        }
+        if (results.affectedRows === 0) {
+            return res.status(404).json({ message: "Match non trouvé" });
+        }
+        res.json({ message: "Match supprimé avec succès !" });
+    });
+});
+
+// Fonction pour calculer le classement
+function calculerClassement(matchs) {
+    const classement = {};
+
+    matchs.forEach(match => {
+        const { Equipe1, Equipe2, Butequipe1, Butequipe2, nom_equipe1, nom_equipe2 } = match;
+
+        if (!classement[Equipe1]) {
+            classement[Equipe1] = {
+                id: Equipe1,
+                nom: nom_equipe1,
+                matchsJoues: 0,
+                gagne: 0,
+                perdu: 0,
+                nul: 0,
+                points: 0,
+                butsPour: 0,
+                butsContre: 0,
+                differenceButs: 0,
+            };
+        }
+        if (!classement[Equipe2]) {
+            classement[Equipe2] = {
+                id: Equipe2,
+                nom: nom_equipe2,
+                matchsJoues: 0,
+                gagne: 0,
+                perdu: 0,
+                nul: 0,
+                points: 0,
+                butsPour: 0,
+                butsContre: 0,
+                differenceButs: 0,
+            };
+        }
+
+        classement[Equipe1].matchsJoues += 1;
+        classement[Equipe2].matchsJoues += 1;
+
+        classement[Equipe1].butsPour += Butequipe1;
+        classement[Equipe1].butsContre += Butequipe2;
+
+        classement[Equipe2].butsPour += Butequipe2;
+        classement[Equipe2].butsContre += Butequipe1;
+
+        // Résultat
+        if (Butequipe1 > Butequipe2) {
+            classement[Equipe1].points += 3;
+            classement[Equipe1].gagne += 1;
+            classement[Equipe2].perdu += 1;
+        } else if (Butequipe2 > Butequipe1) {
+            classement[Equipe2].points += 3;
+            classement[Equipe2].gagne += 1;
+            classement[Equipe1].perdu += 1;
+        } else {
+            classement[Equipe1].points += 1;
+            classement[Equipe2].points += 1;
+            classement[Equipe1].nul += 1;
+            classement[Equipe2].nul += 1;
+        }
+
+        classement[Equipe1].differenceButs = classement[Equipe1].butsPour - classement[Equipe1].butsContre;
+        classement[Equipe2].differenceButs = classement[Equipe2].butsPour - classement[Equipe2].butsContre;
+    });
+
+    const classementArray = Object.values(classement);
+
+    classementArray.sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        if (b.differenceButs !== a.differenceButs) return b.differenceButs - a.differenceButs;
+        return b.butsPour - a.butsPour;
+    });
+
+    // On ajoute le rang ici
+    classementArray.forEach((equipe, index) => {
+        equipe.rang = index + 1;
+    });
+
+    return classementArray;
+}
+
 // Routes pour les classements
 app.get('/classement', (req, res) => {
     const query = `
@@ -575,15 +778,13 @@ app.get('/admin/classement', (req, res) => {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 app.post('/admin/classement', (req, res) => {
     const { nom, matchsJoues, gagne, perdu, nul, points, butsPour, butsContre, differenceButs } = req.body;
-    
+
     console.log("Données reçues pour le classement :", req.body);
-    
-    // Vérification que les données requises sont fournies
+
     if (!nom || typeof nom !== 'string' || nom.trim() === '') {
         return res.status(400).json({ error: "Le nom de l'équipe est requis et doit être une chaîne de caractères valide." });
     }
-    
-    // Convertir les valeurs numériques si elles sont envoyées comme des chaînes
+
     const matchsJouesNum = parseInt(matchsJoues) || 0;
     const gagneNum = parseInt(gagne) || 0;
     const perduNum = parseInt(perdu) || 0;
@@ -592,39 +793,99 @@ app.post('/admin/classement', (req, res) => {
     const butsPourNum = parseInt(butsPour) || 0;
     const butsContreNum = parseInt(butsContre) || 0;
     const differenceButsNum = parseInt(differenceButs) || 0;
-    
-    const query = "INSERT INTO Classement (nom, matchsJoues, gagne, perdu, nul, points, butsPour, butsContre, differenceButs) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    bddConnection.query(query, [
-        nom, 
-        matchsJouesNum, 
-        gagneNum, 
-        perduNum, 
-        nulNum, 
-        pointsNum, 
-        butsPourNum, 
-        butsContreNum, 
+
+    const insertQuery = `
+        INSERT INTO Classement (nom, matchsJoues, gagne, perdu, nul, points, butsPour, butsContre, differenceButs)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    bddConnection.query(insertQuery, [
+        nom,
+        matchsJouesNum,
+        gagneNum,
+        perduNum,
+        nulNum,
+        pointsNum,
+        butsPourNum,
+        butsContreNum,
         differenceButsNum
     ], (err, result) => {
         if (err) {
             console.error("Erreur MySQL lors de l'ajout du classement :", err);
             return res.status(500).json({ error: "Erreur lors de l'ajout du classement" });
         }
-        console.log("Classement ajouté avec succès, ID:", result.insertId);
-        res.status(201).json({ 
-            message: "Classement ajouté avec succès !",
-            id: result.insertId,
-            equipe: nom,
-            stats: {
-                matchsJoues: matchsJouesNum,
-                gagne: gagneNum,
-                perdu: perduNum,
-                nul: nulNum,
-                points: pointsNum,
-                butsPour: butsPourNum,
-                butsContre: butsContreNum,
-                differenceButs: differenceButsNum
+
+        const newId = result.insertId;
+
+        const classementQuery = `
+            SELECT id, nom, points, differenceButs
+            FROM Classement
+            ORDER BY points DESC, differenceButs DESC
+        `;
+
+        bddConnection.query(classementQuery, (err, rows) => {
+            if (err) {
+                console.error("Erreur lors de la récupération du classement :", err);
+                return res.status(500).json({ error: "Erreur lors du calcul du rang" });
             }
+
+            const rang = rows.findIndex(equipe => equipe.id === newId) + 1;
+
+            // Mise à jour du rang dans la BDD
+            const updateRangQuery = `UPDATE Classement SET rang = ? WHERE id = ?`;
+
+            bddConnection.query(updateRangQuery, [rang, newId], (err) => {
+                if (err) {
+                    console.error("Erreur lors de la mise à jour du rang :", err);
+                    return res.status(500).json({ error: "Erreur lors de la mise à jour du rang" });
+                }
+
+                res.status(201).json({
+                    message: "Classement ajouté avec succès !",
+                    id: newId,
+                    equipe: nom,
+                    rang: rang,
+                    stats: {
+                        matchsJoues: matchsJouesNum,
+                        gagne: gagneNum,
+                        perdu: perduNum,
+                        nul: nulNum,
+                        points: pointsNum,
+                        butsPour: butsPourNum,
+                        butsContre: butsContreNum,
+                        differenceButs: differenceButsNum
+                    }
+                });
+            });
         });
+    });
+});
+
+app.put('/admin/classement/:id', (req, res) => {
+    const id = req.params.id;
+    const { nom, matchsJoues, gagne, perdu, nul, points, butsPour, butsContre, differenceButs } = req.body;
+    const query = `
+        UPDATE Classement
+        SET nom = ?, matchsJoues = ?, gagne = ?, perdu = ?, nul = ?, points = ?, butsPour = ?, butsContre = ?, differenceButs = ?
+        WHERE id = ?
+    `;
+    bddConnection.query(query, [nom, matchsJoues, gagne, perdu, nul, points, butsPour, butsContre, differenceButs, id], (error, results, fields) => {
+        if (error) throw error;
+        if (results.affectedRows === 0) {
+            return res.status(404).json({ message: "Classement non trouvé" });
+        }
+        res.json({ message: "Classement mis à jour avec succès !" });
+    });
+});
+app.delete('/admin/classement/:id', (req, res) => {
+    const id = req.params.id;
+    const query = "DELETE FROM Classement WHERE id = ?";
+    bddConnection.query(query, [id], (error, results, fields) => {
+        if (error) throw error;
+        if (results.affectedRows === 0) {
+            return res.status(404).json({ message: "Classement non trouvé" });
+        }
+        res.json({ message: "Classement supprimé avec succès !" });
     });
 });
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -658,7 +919,6 @@ app.get('/vainqueur', (req, res) => {
         res.json(vainqueur);
     });
 });
-
 
 app.post('/admin/vainqueur', (req, res) => {
     const { nom } = req.body;
@@ -708,7 +968,6 @@ app.delete('/admin/vainqueur/:id', (req, res) => {
         res.json({ message: "Vainqueur supprimé avec succès !" });
     });
 });
-////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Test de requête SQL directe
 bddConnection.query('SELECT * FROM users', (err, results) => {
@@ -719,15 +978,19 @@ bddConnection.query('SELECT * FROM users', (err, results) => {
     console.log('Résultats de la requête :', results);
 });
 
+// Fermeture de la connexion à la base de données lorsque le processus se termine
+process.on('SIGINT', () => {
+    bddConnection.end(err => {
+        if (err) {
+            console.error('Erreur lors de la fermeture de la connexion à la base de données :', err.stack);
+        } else {
+            console.log('Connexion à la base de données fermée.');
+        }
+        process.exit();
+    });
+});
+
 // Démarrage du serveur
 app.listen(port, () => {
     console.log(`Le serveur est en écoute sur le port ${port}`);
 });
-
-
-
-
-
-
-
-//  eh jonas lis ce message tu vas bien finir par comprendre alors vois classement = rang ok je repete classement = rang merci bon courage 
