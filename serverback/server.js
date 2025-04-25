@@ -1,4 +1,4 @@
-// Importation des modules
+// Importation des modules du js
 const dotenv = require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -9,15 +9,10 @@ const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 const bodyParser = require("body-parser");
 const pm2 = require("pm2");
-const { request } = require('http');
-const { response } = require('express');
-const { json } = require('express');
-const { urlencoded } = require('express');
-const { use } = require('express');
-const process = require('process');
 const { Console } = require('console');
 const { error } = require('console');
 const cooking = require('cooking');
+const process = require('process');
 
 // Configuration du serveur
 const port = 9100; 
@@ -39,10 +34,10 @@ app.use(limiter); // Appliquer à toutes les routes
 
 // Configuration de la connexion à la base de données
 const bddConnection = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: '',
-    database: 'Classements'
+    host: '192.168.64.175',
+    user: 'site1',
+    password: 'yuzu007',
+    database: 'classements'
 });
 
 // Connexion à la base de données
