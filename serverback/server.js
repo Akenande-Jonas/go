@@ -16,7 +16,7 @@ const process = require('process');
 const axios = require('axios');
 
 // Configuration du serveur
-const port = 9100; 
+const port = 9000; 
 const app = express();
 
 // Protection contre les injections SQL
@@ -384,14 +384,14 @@ app.get('/admin/users', (req, res) => {
 });
 
 app.post('/admin/users', (req, res) => {
-    const { id, nom, mdp, role } = req.body;
+    const { id, nom, mdp } = req.body;
 
     if (!id || !nom || !mdp || !role) {
         return res.status(400).json({ message: "Données manquantes" });
     }
 
-    const sql = "INSERT INTO users (id, nom, mdp, role) VALUES (?, ?, ?, ?)";
-    bddConnection.query(sql, [id, nom, mdp, role], (err, result) => {
+    const sql = "INSERT INTO users (id, nom, mdp) VALUES (?, ?, ?, ?)";
+    bddConnection.query(sql, [id, nom, mdp], (err, result) => {
         if (err) {
             console.error("Erreur lors de l'insertion :", err);
             return res.status(500).json({ message: "Erreur serveur" });
@@ -424,14 +424,14 @@ app.get('/admin/users/:id', (req, res) => {
 
 app.put('/admin/users/:id', (req, res) => {
     const userId = req.params.id;
-    const { nom, mdp, role } = req.body;
+    const { nom, mdp} = req.body;
 
-    if (!nom || !mdp || !role) {
+    if (!nom || !mdp) {
         return res.status(400).json({ message: "Données manquantes" });
     }
 
-    const sql = "UPDATE users SET nom = ?, mdp = ?, role = ? WHERE id = ?";
-    bddConnection.query(sql, [nom, mdp, role, userId], (err, result) => {
+    const sql = "UPDATE users SET nom = ?, mdp = ? WHERE id = ?";
+    bddConnection.query(sql, [nom, mdp, userId], (err, result) => {
         if (err) {
             console.error("Erreur lors de la mise à jour :", err);
             return res.status(500).json({ message: "Erreur serveur" });
@@ -496,26 +496,58 @@ app.get('/admin/connexion/:id', (req, res) => {
 });
 
 app.post('/admin/connexion', async (req, res) => {
-    const { nom, mdp } = req.body;
+    const { nom, mdp, email } = req.body;
 
-    if (!nom || !mdp) {
+    if (!nom || !mdp || !email) {
         return res.status(400).json({ error: "Tous les champs sont requis." });
     }
+
     try {
         const hashedmdp = await bcrypt.hash(mdp, 10); // Hachage du mot de passe
 
-        const query = "INSERT INTO Admin (nom, mdp) VALUES (?, ?)";
-        bddConnection.query(query, [nom, hashedmdp], (err, result) => {
+        const query = "INSERT INTO Admin (nom, mdp, email) VALUES (?, ?, ?)";
+        bddConnection.query(query, [nom, hashedmdp, email], (err, result) => {
             if (err) {
                 console.error(err);
                 return res.status(500).json({ error: "Erreur lors de l'ajout de l'admin" });
             }
             res.status(201).json({ message: "Admin ajouté avec succès !" });
         });
+
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: "Erreur lors du hachage du mot de passe" });
     }
+});
+
+app.put('/admin/connexion/:id', (req, res) => {
+    const id = req.params.id;
+    const { nom, mdp, email } = req.body;
+
+    if (!nom || !mdp || !email) {
+        return res.status(400).json({ error: "Tous les champs sont requis." });
+    }
+
+    const query = "UPDATE Admin SET nom = ?, mdp = ?, email = ? WHERE id = ?";
+    bddConnection.query(query, [nom, mdp, email, id], (err, result) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ error: "Erreur lors de la mise à jour de l'admin" });
+        }
+        res.status(200).json({ message: "Admin mis à jour avec succès !" });
+    });
+});
+
+app.delete('/admin/connexion/:id', (req, res) => {
+    const id = req.params.id;
+    const query = "DELETE FROM Admin WHERE id = ?";
+    bddConnection.query(query, [id], (err, result) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ error: "Erreur lors de la suppression de l'admin" });
+        }
+        res.status(200).json({ message: "Admin supprimé avec succès !" });
+    });
 });
 
 // Routes pour les équipes
@@ -998,28 +1030,40 @@ app.get('/vainqueur', (req, res) => {
 });
 
 app.post('/admin/vainqueur', (req, res) => {
-    const { nom } = req.body;
+    const { nom, equipe, annee } = req.body;
     console.log("Données reçues pour le vainqueur :", req.body);
-    
-    // Vérification que le nom est fourni
+
+    // Vérification des données
     if (!nom || typeof nom !== 'string' || nom.trim() === '') {
-      return res.status(400).json({ error: "Le nom du vainqueur est requis et doit être une chaîne de caractères valide." });
+        return res.status(400).json({ error: "Le nom du vainqueur est requis et doit être une chaîne de caractères valide." });
     }
-    
-    const query = "INSERT INTO Vainqueur (nom) VALUES (?)";
-    bddConnection.query(query, [nom], (err, result) => {
+
+    if (!equipe || isNaN(equipe)) {
+        return res.status(400).json({ error: "Le numéro de l'équipe est requis et doit être un nombre valide." });
+    }
+
+    if (!annee || typeof annee !== 'string' || annee.trim() === '') {
+        return res.status(400).json({ error: "L'année est requise et doit être une chaîne de caractères valide." });
+    }
+
+    // Requête SQL avec les 3 champs
+    const query = "INSERT INTO vainqueur (nom, equipe, annee) VALUES (?, ?, ?)";
+    bddConnection.query(query, [nom.trim(), equipe, annee.trim()], (err, result) => {
         if (err) {
             console.error("Erreur MySQL lors de l'ajout du vainqueur :", err);
-            return res.status(500).json({ error: "Erreur lors de l'ajout du vainqueur" });
+            return res.status(500).json({ error: "Erreur lors de l'ajout du vainqueur." });
         }
         console.log("Vainqueur ajouté avec succès, ID:", result.insertId);
-        res.status(201).json({ 
+        res.status(201).json({
             message: "Vainqueur ajouté avec succès !",
             id: result.insertId,
-            nom: nom
+            nom,
+            equipe,
+            annee
         });
     });
 });
+
 
 app.put('/admin/vainqueur/:id', (req, res) => {
     const id = req.params.id;

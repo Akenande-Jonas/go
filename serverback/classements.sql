@@ -2,10 +2,10 @@
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
--- Hôte : 127.0.0.1
--- Généré le : ven. 25 avr. 2025 à 01:13
--- Version du serveur : 10.4.32-MariaDB
--- Version de PHP : 8.0.30
+-- Hôte : localhost
+-- Généré le : mer. 30 avr. 2025 à 15:29
+-- Version du serveur : 10.5.23-MariaDB-0+deb11u1
+-- Version de PHP : 7.4.33
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -99,27 +99,23 @@ DELIMITER ;
 -- --------------------------------------------------------
 
 --
--- Structure de la table `admin`
+-- Structure de la table `Admin`
 --
 
-CREATE TABLE `admin` (
+CREATE TABLE `Admin` (
   `id` int(11) NOT NULL,
-  `nom` varchar(50) NOT NULL,
+  `nom` varchar(100) NOT NULL,
   `mdp` varchar(255) NOT NULL,
-  `email` varchar(100) DEFAULT NULL,
-  `matchs` int(11) NOT NULL,
-  `users` int(11) NOT NULL,
-  `equipe1` int(11) NOT NULL,
-  `equipe2` int(11) NOT NULL
+  `email` varchar(150) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Déchargement des données de la table `admin`
+-- Déchargement des données de la table `Admin`
 --
 
-INSERT INTO `admin` (`id`, `nom`, `mdp`, `email`, `matchs`, `users`, `equipe1`, `equipe2`) VALUES
-(1, 'admin', '$2b$10$rIU60nWMiMhKVFMdKNUY9e2zxIOTe.CuLx1Yb8mQNYdXKWh.1XqiW', 'admin@tournoi.fr', 0, 0, 0, 0),
-(2, 'moderateur', '$2b$10$xJKL39TvQPzI5bQ.8TpmY.E3V3K4XZ5rBGYZl7fH3zOXrhd8wyXJO', 'mod@tournoi.fr', 0, 0, 0, 0);
+INSERT INTO `Admin` (`id`, `nom`, `mdp`, `email`) VALUES
+(1, 'admin1', '$2b$10$Iwy5UM4i9VS2SBFcMr2FIeXJhbotJHGOMd32WOJ/sB1XZgRoSFHcC', 'admin1@gmail.com'),
+(2, 'Jonas', '$2b$10$QnsD9gLBI4zNDoJd8/mZYOvqYvCmiwyBuEyzD493qTSrKH0jkgaY6', 'Jonas.admin@gmail.com');
 
 -- --------------------------------------------------------
 
@@ -166,43 +162,6 @@ INSERT INTO `equipe` (`id`, `nom`) VALUES
 (8, 'CIEL2'),
 (22, 'Superstart'),
 (12, 'TLES BAC PRO');
-
--- --------------------------------------------------------
-
---
--- Structure de la table `inscription`
---
-
-CREATE TABLE `inscription` (
-  `id` int(11) NOT NULL,
-  `nom` varchar(100) NOT NULL,
-  `prenom` varchar(100) NOT NULL,
-  `mail` varchar(100) NOT NULL,
-  `mdp` varchar(100) NOT NULL,
-  `DateDeNaissance` datetime NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Structure de la table `journal`
---
-
-CREATE TABLE `journal` (
-  `id` int(11) NOT NULL,
-  `table_name` varchar(50) NOT NULL,
-  `operation` varchar(20) NOT NULL,
-  `admin_id` int(11) DEFAULT NULL,
-  `date_operation` datetime DEFAULT current_timestamp(),
-  `details` text DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Déchargement des données de la table `journal`
---
-
-INSERT INTO `journal` (`id`, `table_name`, `operation`, `admin_id`, `date_operation`, `details`) VALUES
-(7, 'admin_toto', 'admin_admin', 1, '2025-04-01 21:47:48', 'premier matchs');
 
 -- --------------------------------------------------------
 
@@ -277,18 +236,6 @@ INSERT INTO `matchs` (`id`, `Equipe1`, `Equipe2`, `Butequipe1`, `Butequipe2`, `d
 (46, 7, 8, 1, 1, '2025-04-22 21:37:24'),
 (47, 7, 9, 2, 3, '2025-04-23 21:37:24');
 
---
--- Déclencheurs `matchs`
---
-DELIMITER $$
-CREATE TRIGGER `after_match_update` AFTER UPDATE ON `matchs` FOR EACH ROW BEGIN
-    IF NEW.statut = 'terminé' AND OLD.statut != 'terminé' THEN
-        CALL update_classement();
-    END IF;
-END
-$$
-DELIMITER ;
-
 -- --------------------------------------------------------
 
 --
@@ -298,17 +245,8 @@ DELIMITER ;
 CREATE TABLE `users` (
   `id` int(11) NOT NULL,
   `nom` varchar(100) NOT NULL,
-  `mdp` varchar(255) NOT NULL,
-  `role` varchar(200) DEFAULT NULL
+  `mdp` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Déchargement des données de la table `users`
---
-
-INSERT INTO `users` (`id`, `nom`, `mdp`, `role`) VALUES
-(5, 'start', '0000', 'kaka'),
-(30, 'Jean Dupont', 'JD', 'user');
 
 -- --------------------------------------------------------
 
@@ -324,44 +262,14 @@ CREATE TABLE `vainqueur` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Déchargement des données de la table `vainqueur`
---
-
-INSERT INTO `vainqueur` (`id`, `nom`, `equipe`, `annee`) VALUES
-(3, 'Jean Dupont', NULL, '2024');
-
--- --------------------------------------------------------
-
---
--- Doublure de structure pour la vue `vue_matchs`
--- (Voir ci-dessous la vue réelle)
---
-CREATE TABLE `vue_matchs` (
-);
-
--- --------------------------------------------------------
-
---
--- Structure de la vue `vue_matchs`
---
-DROP TABLE IF EXISTS `vue_matchs`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vue_matchs`  AS SELECT `m`.`id` AS `id`, `m`.`Equipe1` AS `Equipe1`, `m`.`Equipe2` AS `Equipe2`, `m`.`Butequipe1` AS `Butequipe1`, `m`.`Butequipe2` AS `Butequipe2`, `e1`.`nom` AS `nom_equipe1`, `e2`.`nom` AS `nom_equipe2`, `m`.`date_match` AS `date_match`, `m`.`lieu` AS `lieu`, `m`.`statut` AS `statut` FROM ((`matchs` `m` join `equipe` `e1` on(`m`.`Equipe1` = `e1`.`id`)) join `equipe` `e2` on(`m`.`Equipe2` = `e2`.`id`)) ;
-
---
 -- Index pour les tables déchargées
 --
 
 --
--- Index pour la table `admin`
+-- Index pour la table `Admin`
 --
-ALTER TABLE `admin`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `nom` (`nom`),
-  ADD KEY `matchs` (`matchs`),
-  ADD KEY `users` (`users`),
-  ADD KEY `equipe1` (`equipe1`),
-  ADD KEY `equipe2` (`equipe2`);
+ALTER TABLE `Admin`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Index pour la table `classement`
@@ -376,20 +284,6 @@ ALTER TABLE `classement`
 ALTER TABLE `equipe`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `nom` (`nom`);
-
---
--- Index pour la table `inscription`
---
-ALTER TABLE `inscription`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `nom` (`nom`);
-
---
--- Index pour la table `journal`
---
-ALTER TABLE `journal`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `admin_id` (`admin_id`);
 
 --
 -- Index pour la table `login`
@@ -426,10 +320,10 @@ ALTER TABLE `vainqueur`
 --
 
 --
--- AUTO_INCREMENT pour la table `admin`
+-- AUTO_INCREMENT pour la table `Admin`
 --
-ALTER TABLE `admin`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+ALTER TABLE `Admin`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT pour la table `classement`
@@ -442,18 +336,6 @@ ALTER TABLE `classement`
 --
 ALTER TABLE `equipe`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
-
---
--- AUTO_INCREMENT pour la table `inscription`
---
-ALTER TABLE `inscription`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT pour la table `journal`
---
-ALTER TABLE `journal`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT pour la table `login`
@@ -471,7 +353,7 @@ ALTER TABLE `matchs`
 -- AUTO_INCREMENT pour la table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
 
 --
 -- AUTO_INCREMENT pour la table `vainqueur`
@@ -488,12 +370,6 @@ ALTER TABLE `vainqueur`
 --
 ALTER TABLE `classement`
   ADD CONSTRAINT `classement_ibfk_1` FOREIGN KEY (`equipe`) REFERENCES `equipe` (`id`) ON DELETE CASCADE;
-
---
--- Contraintes pour la table `journal`
---
-ALTER TABLE `journal`
-  ADD CONSTRAINT `journal_ibfk_1` FOREIGN KEY (`admin_id`) REFERENCES `admin` (`id`) ON DELETE SET NULL;
 
 --
 -- Contraintes pour la table `matchs`
