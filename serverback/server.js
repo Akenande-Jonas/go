@@ -13,24 +13,69 @@ const { Console } = require('console');
 const { error } = require('console');
 const cooking = require('cooking');
 const process = require('process');
+const axios = require('axios');
 
 // Configuration du serveur
 const port = 9100; 
 const app = express();
 
-// Configuration des middlewares
-app.use(cors());
-app.use(express.urlencoded({ extended: true })); 
-app.use(cookieParser());
-app.use(express.json());
+// Protection contre les injections SQL
+const sqlInjectionProtection = (req, res, next) => {
+    const regex = /['"\\]/g; // Caractères à interdire
+    for (const key in req.body) {
+        if (typeof req.body[key] === 'string') {
+            req.body[key] = req.body[key].replace(regex, '');
+        }
+    }
+    next();
+};
+
+// Configuration de la connexion à PM2
+pm2.connect({
+    host: '192.168.64.175',
+    port:9100,
+    user: 'site1',
+    password: 'yuzu007',
+    database: 'classements'
+}, (err) => {
+    if (err) {
+        console.error(err);
+        process.exit(2);
+    }
+});
+
+// Connexion à PM2
+pm2.connect((err) => {
+    if (err) {
+        console.error(err);
+        process.exit(2);
+    }
+    pm2.start({
+        script: 'server.js', // chemin vers le fichier de votre serveur
+        name: 'mon-serveur', // nom de votre application
+        exec_mode: 'cluster', // mode d'exécution (cluster ou fork)
+        instances: 1, // nombre d'instances
+        watch: false, // activer la surveillance des fichiers
+    }, (err, apps) => {
+        pm2.disconnect();
+        if (err) throw err;
+    });
+});
 
 // Limite de requêtes pour éviter le spam (5 requêtes max par 1 minute par IP)
 const limiter = rateLimit({
     windowMs: 1 * 60 * 10000, // 1 minute
     max: 25,
-    message: "hahahahah!!!! Trop de tentatives. Réessayez plus tard.",
+    message: "hahahahah!!!! Tu as trop fait de tentatives. Alors réessayez plus tard. hahahahhhah!!!",
 });
-app.use(limiter); // Appliquer à toutes les routes
+
+// Configuration des middlewares
+app.use(cors()); // Middleware pour autoriser les requêtes CORS
+app.use(express.urlencoded({ extended: true })); // Middleware pour parser les données URL-encoded
+app.use(cookieParser()); // Middleware pour parser les cookies
+app.use(express.json()) // Middleware pour parser le JSON
+app.use(limiter); // Appliquer le middleware de protection contre les spam et l'appliquer à toutes les routes
+app.use(sqlInjectionProtection); // Appliquer le middleware de protection contre les injections SQL
 
 // Configuration de la connexion à la base de données
 const bddConnection = mysql.createConnection({
@@ -157,17 +202,6 @@ function determinerVainqueur(matchs) {
     return vainqueurs;
 }
 
-// Routes générales
-app.get('/', (req, res) => {
-    res.json('Bonjour, ceci est notre serveur (back-end), soyez les bienvenus ! ajouter un /accueil dans URL pour accéder à la page d\'accueil');
-});
-
-//////////////////////////////////////////////////////
-
-app.get('/accueil', authenticateToken, (req, res) => {
-    res.json('coucou');
-});
-
 // Vérification du token d'authentification
 function verifierToken(req, res, next) {
     const token = req.cookies.token; // Récupérer le token depuis les cookies
@@ -180,11 +214,15 @@ function verifierToken(req, res, next) {
     });
 }
 
+// Routes générales
+app.get('/', (req, res) => {
+    res.json('Bonjour, ceci est notre serveur (back-end), soyez les bienvenus ! ajouter un /accueil dans URL pour accéder à la page d\'accueil');
+});
+
 // Route d'accueil
 app.get('/accueil', verifierToken, (req, res) => {
     res.status(200).json({ message: `Bienvenue! Vous êtes dans la page d\'accueil. Soyez les bienvenus sur cette page ${req.user.nom}` });
 });
-//////////////////////////////////////////////////////
 
 // Routes d'authentification
 app.post('/inscription', async (req, res) => {
