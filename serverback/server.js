@@ -1064,7 +1064,6 @@ app.post('/admin/vainqueur', (req, res) => {
     });
 });
 
-
 app.put('/admin/vainqueur/:id', (req, res) => {
     const id = req.params.id;
     const { nom } = req.body;
