@@ -227,36 +227,80 @@ app.get('/accueil', verifierToken, (req, res) => {
 // Routes d'authentification
 app.post('/inscription', async (req, res) => {
     try {
-        const hashedPassword = await bcrypt.hash(req.body.password, 10);
-        const user = { username: req.body.username, password: hashedPassword };
-        bddConnection.query('SELECT * FROM users WHERE user_name = ?', [username], async function (err, rows) {
-            if (err) throw err;
-            res.status(201).json('Utilisateur enregistré');
+        const { nom, mdp } = req.body;
+
+        // Hachage du mot de passe
+        const hashedPassword = await bcrypt.hash(mdp, 10);
+
+        // Vérifie si l'utilisateur existe déjà
+        bddConnection.query('SELECT * FROM users WHERE nom = ?', [nom], async (err, rows) => {
+            if (err) return res.status(500).json({ message: "Erreur SQL" });
+
+            if (rows.length > 0) {
+                return res.status(400).json({ message: "Utilisateur déjà existant" });
+            }
+
+            // Insertion dans la base
+            bddConnection.query('INSERT INTO users (nom, mdp) VALUES (?, ?)', [nom, hashedPassword], (err2, result) => {
+                if (err2) return res.status(500).json({ message: "Erreur lors de l'insertion" });
+
+                res.status(201).json({ message: "Utilisateur enregistré avec succès" });
+            });
         });
-    } catch {
-        res.status(500).json();
+
+    } catch (e) {
+        res.status(500).json({ message: "Erreur serveur" });
     }
 });
 
 app.post('/login', async (req, res) => {
-    const { username, password } = req.body;
-    if (!username || !password) return res.status(400).json('Veuillez remplir tous les champs.');
-    bddConnection.query('SELECT * FROM users WHERE username = ?', [username], async (err, rows) => {
+    const { nom, mdp } = req.body;
+
+    // Vérifie que tous les champs sont fournis
+    if (!nom || !mdp) return res.status(400).json({ message: 'Veuillez remplir tous les champs.' });
+
+    // Recherche l'utilisateur par son nom
+    bddConnection.query('SELECT * FROM users WHERE nom = ?', [nom], async (err, rows) => {
         if (err) {
-            console.error(err);
-            return res.status(500).json('Erreur serveur');
+            console.error('Erreur SQL :', err);
+            return res.status(500).json({ message: 'Erreur serveur' });
         }
-        if (rows.length === 0) return res.status(400).json('Utilisateur non trouvé');
+
+        if (rows.length === 0) {
+            return res.status(400).json({ message: 'Utilisateur non trouvé' });
+        }
+
         try {
-            const match = await bcrypt.compare(password, rows[0].password);
-            if (!match) return res.status(401).json('Mot de passe incorrect');
-            const user = { name: username };
-            const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
-            res.cookie('token', accessToken, { httpOnly: true, secure: true, sameSite: 'Strict' });
-            res.json({ accessToken });
+            const userInDB = rows[0];
+
+            // Vérifie le mot de passe haché
+            const match = await bcrypt.compare(mdp, userInDB.mdp);
+
+            if (!match) {
+                return res.status(401).json({ message: 'Mot de passe incorrect' });
+            }
+
+            // Crée un objet utilisateur minimal pour le token
+            const userPayload = { id: userInDB.id, nom: userInDB.nom };
+
+            // Génère un token JWT
+            const secret = process.env.ACCESS_TOKEN_SECRET || 'default_secret';
+            const accessToken = jwt.sign(userPayload, secret, { expiresIn: '1h' });
+            console.log('Token généré :', accessToken);
+
+            // Envoie le token dans un cookie sécurisé
+            res.cookie('token', accessToken, {
+                httpOnly: true,
+                secure: true, // Mets false si tu testes en local sans HTTPS
+                sameSite: 'Strict',
+                maxAge: 3600000 // 1h
+            });
+
+            res.status(200).json({ message: 'Connexion réussie', accessToken });
+
         } catch (error) {
-            console.error(error);
-            res.status(500).json('Erreur lors de l\'authentification');
+            console.error('Erreur auth :', error);
+            res.status(500).json({ message: 'Erreur lors de l\'authentification' });
         }
     });
 });
