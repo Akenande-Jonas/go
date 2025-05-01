@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin | Connexion</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: #f4f6f9;
+      padding: 40px 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+      background: #fff;
+      border-radius: 10px;
+      padding: 30px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    h1, h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .tab-controls {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 20px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 12px;
+      background: #e0e0e0;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .tab-btn.active {
+      background: #4caf50;
+      color: white;
+    }
+
+    .form {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .form.active {
+      display: block;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    input[type="text"], input[type="email"], input[type="password"] {
+      width: 100%;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      transition: border-color 0.3s;
+    }
+
+    input:focus {
+      border-color: #4caf50;
+      outline: none;
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      background-color: #4caf50;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #388e3c;
+    }
+
+    .secondary-btn {
+      background-color: #2196f3;
+    }
+
+    .secondary-btn:hover {
+      background-color: #1976d2;
+    }
+
+    .message {
+      margin-top: 20px;
+      padding: 12px;
+      border-radius: 6px;
+      font-weight: 500;
+      display: none;
+    }
+
+    .message.success {
+      background-color: #dff0d8;
+      color: #3c763d;
+    }
+
+    .message.error {
+      background-color: #f2dede;
+      color: #a94442;
+    }
+
+    #admin-dashboard {
+      margin-top: 30px;
+      padding: 20px;
+      border-radius: 8px;
+      background: #e3f2fd;
+    }
+
+    .user-list {
+      margin-top: 15px;
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    .user-item {
+      padding: 12px;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .user-item:last-child {
+      border-bottom: none;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Interface Admin</h1>
+
+    <div class="tab-controls">
+      <button class="tab-btn active" data-tab="connexion">Connexion</button>
+      <button class="tab-btn" data-tab="inscription">Inscription</button>
+      <button class="tab-btn" data-tab="recuperation">Mot de passe oublié</button>
+    </div>
+
+    <!-- Formulaires -->
+    <div id="form-connexion" class="form active">
+      <div class="form-group">
+        <label>Nom d'utilisateur</label>
+        <input type="text" id="login-username" />
+      </div>
+      <div class="form-group">
+        <label>Mot de passe</label>
+        <input type="password" id="login-password" />
+      </div>
+      <div class="buttons">
+        <button id="btn-connexion">Connexion</button>
+      </div>
+    </div>
+
+    <div id="form-inscription" class="form">
+      <div class="form-group">
+        <label>Nom d'utilisateur</label>
+        <input type="text" id="signup-username" />
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="signup-email" />
+      </div>
+      <div class="form-group">
+        <label>Mot de passe</label>
+        <input type="password" id="signup-password" />
+      </div>
+      <div class="buttons">
+        <button id="btn-inscription">S'inscrire</button>
+      </div>
+    </div>
+
+    <div id="form-recuperation" class="form">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="recovery-email" />
+      </div>
+      <div class="buttons">
+        <button id="btn-recuperation" class="secondary-btn">Récupérer</button>
+      </div>
+    </div>
+
+    <div id="message" class="message"></div>
+
+    <!-- Tableau de bord -->
+    <div id="admin-dashboard" style="display: none;">
+      <h2>Bienvenue, <span id="admin-name"></span></h2>
+      <h3>Utilisateurs</h3>
+      <div id="user-list" class="user-list"></div>
+      <div class="buttons" style="margin-top: 15px;">
+        <button id="btn-deconnexion">Déconnexion</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tabs = document.querySelectorAll(".tab-btn");
+    const forms = {
+      connexion: document.getElementById("form-connexion"),
+      inscription: document.getElementById("form-inscription"),
+      recuperation: document.getElementById("form-recuperation"),
+    };
+    const message = document.getElementById("message");
+    const adminName = document.getElementById("admin-name");
+    const adminDashboard = document.getElementById("admin-dashboard");
+    const userList = document.getElementById("user-list");
+
+    let admins = JSON.parse(localStorage.getItem("admins") || "[]");
+
+    tabs.forEach(tab => {
+      tab.addEventListener("click", () => {
+        tabs.forEach(t => t.classList.remove("active"));
+        tab.classList.add("active");
+        Object.values(forms).forEach(f => f.classList.remove("active"));
+        forms[tab.dataset.tab].classList.add("active");
+      });
+    });
+
+    function showMessage(text, type) {
+      message.textContent = text;
+      message.className = `message ${type}`;
+      message.style.display = "block";
+      setTimeout(() => (message.style.display = "none"), 3000);
+    }
+
+    function refreshUserList() {
+      userList.innerHTML = "";
+      const users = [
+        { nom: "Jean Dupont", email: "jean@exemple.com", role: "Utilisateur" },
+        { nom: "Marie Martin", email: "marie@exemple.com", role: "Éditeur" },
+      ];
+      users.forEach(user => {
+        const div = document.createElement("div");
+        div.className = "user-item";
+        div.innerHTML = `<div><strong>${user.nom}</strong><br>${user.email} (${user.role})</div>`;
+        userList.appendChild(div);
+      });
+    }
+
+    document.getElementById("btn-inscription").addEventListener("click", () => {
+      const username = document.getElementById("signup-username").value.trim();
+      const email = document.getElementById("signup-email").value.trim();
+      const password = document.getElementById("signup-password").value.trim();
+
+      if (!username || !email || !password) return showMessage("Tous les champs sont requis", "error");
+      if (admins.some(a => a.username === username || a.email === email)) {
+        return showMessage("Utilisateur ou email déjà utilisé", "error");
+      }
+
+      admins.push({ username, email, password });
+      localStorage.setItem("admins", JSON.stringify(admins));
+      showMessage("Inscription réussie", "success");
+      document.getElementById("signup-username").value = "";
+      document.getElementById("signup-email").value = "";
+      document.getElementById("signup-password").value = "";
+    });
+
+    document.getElementById("btn-connexion").addEventListener("click", () => {
+      const username = document.getElementById("login-username").value.trim();
+      const password = document.getElementById("login-password").value.trim();
+      const admin = admins.find(a => a.username === username && a.password === password);
+
+      if (!admin) return showMessage("Identifiants incorrects", "error");
+
+      localStorage.setItem("adminConnected", admin.username);
+      adminName.textContent = admin.username;
+      adminDashboard.style.display = "block";
+      Object.values(forms).forEach(f => f.classList.remove("active"));
+      refreshUserList();
+    });
+
+    document.getElementById("btn-recuperation").addEventListener("click", () => {
+      const email = document.getElementById("recovery-email").value.trim();
+      const admin = admins.find(a => a.email === email);
+      if (!admin) return showMessage("Email non trouvé", "error");
+      showMessage(`Mot de passe: ${admin.password}`, "success"); // démo uniquement
+    });
+
+    document.getElementById("btn-deconnexion").addEventListener("click", () => {
+      localStorage.removeItem("adminConnected");
+      adminDashboard.style.display = "none";
+      forms.connexion.classList.add("active");
+      tabs.forEach(t => t.classList.remove("active"));
+      document.querySelector('[data-tab="connexion"]').classList.add("active");
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const admin = localStorage.getItem("adminConnected");
+      if (admin) {
+        adminName.textContent = admin;
+        adminDashboard.style.display = "block";
+        refreshUserList();
+      }
+    });
+  </script>
+</body>
+</html>

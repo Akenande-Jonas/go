@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Espace de Connexion</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .buttons {
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .message {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .hidden {
+            display: none;
+        }
+        .page-accueil {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #e9f7ef;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Espace de Connexion</h1>
+        
+        <div id="form-connexion">
+            <div class="form-group">
+                <label for="username">Nom d'utilisateur:</label>
+                <input type="text" id="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Mot de passe:</label>
+                <input type="password" id="password" required>
+            </div>
+            <div class="buttons">
+                <button id="btn-inscription">S'inscrire</button>
+                <button id="btn-connexion">Se connecter</button>
+            </div>
+        </div>
+        
+        <div id="message" class="message hidden"></div>
+        
+        <div id="page-accueil" class="page-accueil hidden">
+            <h2>Bienvenue sur la page d'accueil!</h2>
+            <p>Vous êtes maintenant connecté.</p>
+            <button id="btn-deconnexion">Se déconnecter</button>
+        </div>
+    </div>
+
+    <script>
+        // Stockage des utilisateurs
+        let users = [];
+        
+        // Récupération des utilisateurs du localStorage s'ils existent
+        if (localStorage.getItem('users')) {
+            users = JSON.parse(localStorage.getItem('users'));
+        }
+        
+        // Éléments du DOM
+        const formConnexion = document.getElementById('form-connexion');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const btnInscription = document.getElementById('btn-inscription');
+        const btnConnexion = document.getElementById('btn-connexion');
+        const messageDiv = document.getElementById('message');
+        const pageAccueil = document.getElementById('page-accueil');
+        const btnDeconnexion = document.getElementById('btn-deconnexion');
+        
+        // Fonction pour afficher un message
+        function afficherMessage(texte, type) {
+            messageDiv.textContent = texte;
+            messageDiv.className = `message ${type}`;
+            messageDiv.classList.remove('hidden');
+            
+            // Masquer le message après 3 secondes
+            setTimeout(() => {
+                messageDiv.classList.add('hidden');
+            }, 3000);
+        }
+        
+        // Fonction pour vérifier si un utilisateur existe
+        function utilisateurExiste(username) {
+            return users.some(user => user.username === username);
+        }
+        
+        // Fonction pour vérifier les identifiants
+        function verifierIdentifiants(username, password) {
+            return users.some(user => user.username === username && user.password === password);
+        }
+        
+        // Fonction pour s'inscrire
+        btnInscription.addEventListener('click', () => {
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value.trim();
+            
+            if (username === '' || password === '') {
+                afficherMessage('Veuillez remplir tous les champs', 'error');
+                return;
+            }
+            
+            if (utilisateurExiste(username)) {
+                afficherMessage('Ce nom d\'utilisateur existe déjà', 'error');
+                return;
+            }
+            
+            // Ajout de l'utilisateur
+            users.push({ username, password });
+            localStorage.setItem('users', JSON.stringify(users));
+            
+            afficherMessage('Inscription réussie! Vous pouvez maintenant vous connecter', 'success');
+            usernameInput.value = '';
+            passwordInput.value = '';
+        });
+        
+        // Fonction pour se connecter
+        btnConnexion.addEventListener('click', () => {
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value.trim();
+            
+            if (username === '' || password === '') {
+                afficherMessage('Veuillez remplir tous les champs', 'error');
+                return;
+            }
+            
+            if (!utilisateurExiste(username)) {
+                afficherMessage('Cet utilisateur n\'existe pas', 'error');
+                return;
+            }
+            
+            if (!verifierIdentifiants(username, password)) {
+                afficherMessage('Mot de passe incorrect', 'error');
+                return;
+            }
+            
+            // Connexion réussie
+            formConnexion.classList.add('hidden');
+            pageAccueil.classList.remove('hidden');
+            messageDiv.classList.add('hidden');
+            localStorage.setItem('connectedUser', username);
+        });
+        
+        // Fonction pour se déconnecter
+        btnDeconnexion.addEventListener('click', () => {
+            formConnexion.classList.remove('hidden');
+            pageAccueil.classList.add('hidden');
+            usernameInput.value = '';
+            passwordInput.value = '';
+            localStorage.removeItem('connectedUser');
+        });
+        
+        // Vérifier si un utilisateur est déjà connecté (au chargement de la page)
+        document.addEventListener('DOMContentLoaded', () => {
+            const connectedUser = localStorage.getItem('connectedUser');
+            if (connectedUser) {
+                formConnexion.classList.add('hidden');
+                pageAccueil.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

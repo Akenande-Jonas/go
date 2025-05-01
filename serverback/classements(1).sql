@@ -2,10 +2,10 @@
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
--- Hôte : localhost
--- Généré le : mer. 30 avr. 2025 à 15:29
--- Version du serveur : 10.5.23-MariaDB-0+deb11u1
--- Version de PHP : 7.4.33
+-- Hôte : 127.0.0.1
+-- Généré le : ven. 02 mai 2025 à 01:05
+-- Version du serveur : 10.4.32-MariaDB
+-- Version de PHP : 8.0.30
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -99,10 +99,10 @@ DELIMITER ;
 -- --------------------------------------------------------
 
 --
--- Structure de la table `Admin`
+-- Structure de la table `admin`
 --
 
-CREATE TABLE `Admin` (
+CREATE TABLE `admin` (
   `id` int(11) NOT NULL,
   `nom` varchar(100) NOT NULL,
   `mdp` varchar(255) NOT NULL,
@@ -110,10 +110,10 @@ CREATE TABLE `Admin` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Déchargement des données de la table `Admin`
+-- Déchargement des données de la table `admin`
 --
 
-INSERT INTO `Admin` (`id`, `nom`, `mdp`, `email`) VALUES
+INSERT INTO `admin` (`id`, `nom`, `mdp`, `email`) VALUES
 (1, 'admin1', '$2b$10$Iwy5UM4i9VS2SBFcMr2FIeXJhbotJHGOMd32WOJ/sB1XZgRoSFHcC', 'admin1@gmail.com'),
 (2, 'Jonas', '$2b$10$QnsD9gLBI4zNDoJd8/mZYOvqYvCmiwyBuEyzD493qTSrKH0jkgaY6', 'Jonas.admin@gmail.com');
 
@@ -160,7 +160,6 @@ INSERT INTO `equipe` (`id`, `nom`) VALUES
 (9, 'BTS ELEC'),
 (7, 'CIEL1'),
 (8, 'CIEL2'),
-(22, 'Superstart'),
 (12, 'TLES BAC PRO');
 
 -- --------------------------------------------------------
@@ -245,7 +244,7 @@ INSERT INTO `matchs` (`id`, `Equipe1`, `Equipe2`, `Butequipe1`, `Butequipe2`, `d
 CREATE TABLE `users` (
   `id` int(11) NOT NULL,
   `nom` varchar(100) NOT NULL,
-  `mdp` varchar(255) NOT NULL
+  `equipe` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -256,7 +255,6 @@ CREATE TABLE `users` (
 
 CREATE TABLE `vainqueur` (
   `id` int(11) NOT NULL,
-  `nom` varchar(100) NOT NULL,
   `equipe` int(11) DEFAULT NULL,
   `annee` varchar(20) DEFAULT '2024'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -266,9 +264,9 @@ CREATE TABLE `vainqueur` (
 --
 
 --
--- Index pour la table `Admin`
+-- Index pour la table `admin`
 --
-ALTER TABLE `Admin`
+ALTER TABLE `admin`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -305,14 +303,14 @@ ALTER TABLE `matchs`
 --
 ALTER TABLE `users`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `username` (`nom`);
+  ADD UNIQUE KEY `username` (`nom`),
+  ADD KEY `equipe` (`equipe`);
 
 --
 -- Index pour la table `vainqueur`
 --
 ALTER TABLE `vainqueur`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `nom` (`nom`),
   ADD KEY `equipe_id` (`equipe`);
 
 --
@@ -320,9 +318,9 @@ ALTER TABLE `vainqueur`
 --
 
 --
--- AUTO_INCREMENT pour la table `Admin`
+-- AUTO_INCREMENT pour la table `admin`
 --
-ALTER TABLE `Admin`
+ALTER TABLE `admin`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
@@ -335,7 +333,7 @@ ALTER TABLE `classement`
 -- AUTO_INCREMENT pour la table `equipe`
 --
 ALTER TABLE `equipe`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
 
 --
 -- AUTO_INCREMENT pour la table `login`
@@ -353,7 +351,7 @@ ALTER TABLE `matchs`
 -- AUTO_INCREMENT pour la table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
 
 --
 -- AUTO_INCREMENT pour la table `vainqueur`

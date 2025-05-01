@@ -177,7 +177,7 @@
 
     <p><center>Si vous en avez marre  <i><b>déconnectez-vous</b></i>. <i><b>Au revoir</b></i> à la prochaine !</center></p>
 
-    <button id="logout" src="connexion.html">Déconnexion</button>
+    <button id="logout" src="espace de cconnexion client.html">Déconnexion</button>
 
     <!-- Pied de page -->
     <footer>
@@ -198,7 +198,7 @@
         // Fonction pour récupérer et afficher le classement
         async function fetchStandings() {
             try {
-                const response = await fetch('http://localhost:9100/classement', {
+                const response = await fetch('http://localhost:9000/classements', {
                     headers: {
                         'Content-Type': 'application/json', // Indique que le contenu est au format JSON
                         'Accept': 'application/json', // Indique que la réponse attendue est au format JSON

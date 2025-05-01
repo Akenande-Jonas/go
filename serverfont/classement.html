@@ -19,17 +19,7 @@
     <section id="classementSection">
         <h1>Classement</h1>
         <table id="classement">
-            <tr>
-                <th>Équipe</th>
-                <th>Points</th>
-                <th>Joue</th>
-                <th>Perdu</th>
-                <th>Nul</th>
-                <th>Buts Pour</th>
-                <th>Buts Contre</th>
-                <th>Diff de Buts</th>
-                <th>Malus</th>
-            </tr>
+            <!-- En-tête ajouté dynamiquement par JS -->
         </table>
     </section>
 
@@ -38,12 +28,12 @@
         <h1>Liste des utilisateurs</h1>
         <table id="usersTable">
             <tr>
-                <th>Nom de l'equipe</th>
+                <th>Nom de l'équipe</th>
                 <th>Nom du joueur</th>
-                <th>Prenom</th>
             </tr>
         </table>
     </section>
+
     <footer>
         <center>
             <p>Suivez-nous sur : 
@@ -57,49 +47,133 @@
             <p>&copy; 2025 Plateforme de Classement. Tous les droits nous sont réservés.</p>
         </center>       
     </footer>
+
     <script>
-        // Récupération du classement
-        async function getClassement() {
+        function calculerClassement(matchs) {
+            const classement = {};
+            matchs.forEach(match => {
+                const { Equipe1, Equipe2, Butequipe1, Butequipe2, nom_equipe1, nom_equipe2 } = match;
+
+                if (!classement[Equipe1]) {
+                    classement[Equipe1] = {
+                        id: Equipe1, nom: nom_equipe1, matchsJoues: 0, gagne: 0, perdu: 0,
+                        nul: 0, points: 0, butsPour: 0, butsContre: 0, differenceButs: 0
+                    };
+                }
+                if (!classement[Equipe2]) {
+                    classement[Equipe2] = {
+                        id: Equipe2, nom: nom_equipe2, matchsJoues: 0, gagne: 0, perdu: 0,
+                        nul: 0, points: 0, butsPour: 0, butsContre: 0, differenceButs: 0
+                    };
+                }
+
+                classement[Equipe1].matchsJoues++;
+                classement[Equipe2].matchsJoues++;
+                classement[Equipe1].butsPour += Butequipe1;
+                classement[Equipe1].butsContre += Butequipe2;
+                classement[Equipe2].butsPour += Butequipe2;
+                classement[Equipe2].butsContre += Butequipe1;
+
+                if (Butequipe1 > Butequipe2) {
+                    classement[Equipe1].points += 3;
+                    classement[Equipe1].gagne++;
+                    classement[Equipe2].perdu++;
+                } else if (Butequipe2 > Butequipe1) {
+                    classement[Equipe2].points += 3;
+                    classement[Equipe2].gagne++;
+                    classement[Equipe1].perdu++;
+                } else {
+                    classement[Equipe1].points++;
+                    classement[Equipe2].points++;
+                    classement[Equipe1].nul++;
+                    classement[Equipe2].nul++;
+                }
+
+                classement[Equipe1].differenceButs = classement[Equipe1].butsPour - classement[Equipe1].butsContre;
+                classement[Equipe2].differenceButs = classement[Equipe2].butsPour - classement[Equipe2].butsContre;
+            });
+
+            const classementArray = Object.values(classement);
+            classementArray.sort((a, b) => {
+                if (b.points !== a.points) return b.points - a.points;
+                if (b.differenceButs !== a.differenceButs) return b.differenceButs - a.differenceButs;
+                return b.butsPour - a.butsPour;
+            });
+
+            classementArray.forEach((equipe, index) => {
+                equipe.rang = index + 1;
+            });
+
+            return classementArray.map(equipe => ({
+                rang: equipe.rang,
+                nom: equipe.nom,
+                matchsJoues: equipe.matchsJoues,
+                points: equipe.points,
+                gagne: equipe.gagne,
+                nul: equipe.nul,
+                perdu: equipe.perdu,
+                butsPour: equipe.butsPour,
+                butsContre: equipe.butsContre,
+                differenceButs: equipe.differenceButs
+            }));
+        }
+
+        async function afficherClassement() {
             try {
-                const response = await fetch('http://localhost:9100/classement');
-                const classement = await response.json();
+                const response = await fetch('http://localhost:9000/classement');
+                const matchs = await response.json();
+                const classement = calculerClassement(matchs);
+
                 const table = document.getElementById('classement');
+                table.innerHTML = "";
+
+                const header = table.insertRow();
+                const headers = ["Rang", "Équipe", "MJ", "Pts", "G", "N", "P", "BP", "BC", "Diff"];
+                headers.forEach(text => {
+                    const th = document.createElement("th");
+                    th.textContent = text;
+                    header.appendChild(th);
+                });
+
                 classement.forEach(equipe => {
                     const row = table.insertRow();
-                    row.insertCell(0).textContent = equipe.nom;
-                    row.insertCell(1).textContent = equipe.points;
-                    row.insertCell(2).textContent = equipe.butsPour;
-                    row.insertCell(3).textContent = equipe.butsContre;
+                    row.insertCell(0).textContent = equipe.rang;
+                    row.insertCell(1).textContent = equipe.nom;
+                    row.insertCell(2).textContent = equipe.matchsJoues;
+                    row.insertCell(3).textContent = equipe.points;
+                    row.insertCell(4).textContent = equipe.gagne;
+                    row.insertCell(5).textContent = equipe.nul;
+                    row.insertCell(6).textContent = equipe.perdu;
+                    row.insertCell(7).textContent = equipe.butsPour;
+                    row.insertCell(8).textContent = equipe.butsContre;
+                    row.insertCell(9).textContent = equipe.differenceButs;
                 });
+
             } catch (error) {
-                console.error('Erreur lors de la récupération du classement:', error);
+                console.error("Erreur lors du chargement du classement :", error);
             }
         }
 
-        // Récupération des utilisateurs
         async function getUsers() {
             try {
-                const response = await fetch('http://localhost:9100/users');
+                const response = await fetch('http://localhost:9000/users');
                 const users = await response.json();
                 const table = document.getElementById('usersTable');
+
                 users.forEach(user => {
                     const row = table.insertRow();
-                    row.insertCell(0).textContent = user.nom;
-                    row.insertCell(1).textContent = user.email;
-                    row.insertCell(2).textContent = user.role;
-                    row.insertCell(3).textContent = user.date; // Exemple pour "Quand ?"
+                    row.insertCell(0).textContent = user.equipe || "-";
+                    row.insertCell(1).textContent = user.nom || "-";
                 });
             } catch (error) {
                 console.error('Erreur lors de la récupération des utilisateurs:', error);
             }
         }
 
-        // Charger les données au chargement de la page
         document.addEventListener("DOMContentLoaded", () => {
-            getClassement();
+            afficherClassement();
             getUsers();
         });
     </script>
-
 </body>
 </html>

@@ -16,7 +16,7 @@ const process = require('process');
 const axios = require('axios');
 
 // Configuration du serveur
-const port = 9000; 
+const port = 9100; 
 const app = express();
 
 // Protection contre les injections SQL
@@ -105,10 +105,8 @@ function authenticateToken(req, res, next) {
 
 function calculerClassement(matchs) {
     const classement = {};
-
     matchs.forEach(match => {
         const { Equipe1, Equipe2, Butequipe1, Butequipe2, nom_equipe1, nom_equipe2 } = match;
-
         if (!classement[Equipe1]) {
             classement[Equipe1] = {
                 id: Equipe1,
@@ -137,16 +135,12 @@ function calculerClassement(matchs) {
                 differenceButs: 0,
             };
         }
-
         classement[Equipe1].matchsJoues += 1;
         classement[Equipe2].matchsJoues += 1;
-
         classement[Equipe1].butsPour += Butequipe1;
         classement[Equipe1].butsContre += Butequipe2;
-
         classement[Equipe2].butsPour += Butequipe2;
         classement[Equipe2].butsContre += Butequipe1;
-
         // Résultat
         if (Butequipe1 > Butequipe2) {
             classement[Equipe1].points += 3;
@@ -162,25 +156,33 @@ function calculerClassement(matchs) {
             classement[Equipe1].nul += 1;
             classement[Equipe2].nul += 1;
         }
-
         classement[Equipe1].differenceButs = classement[Equipe1].butsPour - classement[Equipe1].butsContre;
         classement[Equipe2].differenceButs = classement[Equipe2].butsPour - classement[Equipe2].butsContre;
     });
-
     const classementArray = Object.values(classement);
-
     classementArray.sort((a, b) => {
         if (b.points !== a.points) return b.points - a.points;
         if (b.differenceButs !== a.differenceButs) return b.differenceButs - a.differenceButs;
         return b.butsPour - a.butsPour;
     });
-
-    // On ajoute le rang ici
+    // On ajoute le rang
     classementArray.forEach((equipe, index) => {
         equipe.rang = index + 1;
     });
-
-    return classementArray;
+    
+    // On sélectionne et réorganise les colonnes pour l'affichage
+    return classementArray.map(equipe => ({
+        rang: equipe.rang,
+        nom: equipe.nom,
+        matchsJoues: equipe.matchsJoues,
+        points: equipe.points,
+        gagne: equipe.gagne,
+        nul: equipe.nul,
+        perdu: equipe.perdu,
+        butsPour: equipe.butsPour,
+        butsContre: equipe.butsContre,
+        differenceButs: equipe.differenceButs
+    }));
 }
 
 // Fonction pour déterminer le vainqueur d'un match
@@ -321,19 +323,20 @@ app.get('/users', (req, res) => {
 
 // route pour ajouter un utilisateur
 app.post('/users', async (req, res) => {
-    const { nom, mdp } = req.body;
-    console.log("nom: " + nom + " mdp: " + mdp);
+    const { nom, equipe } = req.body;
+    console.log("nom: " + nom + " equipe: " + equipe);
 
     // Vérification des données reçues
-    if (!nom || !mdp) {
-        return res.status(400).json({ message: "Nom et mot de passe requis" });
+    if (!nom || !equipe) {
+        return res.status(400).json({ message: "Nom et équipe requis" });
     }
-    
+
     try {
         // Hachage du mot de passe (à implémenter correctement)
         // const hashedPassword = await bcrypt.hash(mdp, 10);
-        
-        bddConnection.query('INSERT INTO users (nom, mdp) VALUES (?, ?)', [nom, mdp], function (err, result) {
+
+        // Insertion dans la base de données avec l'équipe
+        bddConnection.query('INSERT INTO users (nom, equipe) VALUES (?, ?, ?)', [nom, equipe], function (err, result) {
             if (err) {
                 return res.status(500).json({ message: "Erreur lors de l'insertion dans la base de données", error: err.message });
             }
@@ -343,6 +346,7 @@ app.post('/users', async (req, res) => {
         res.status(500).json({ message: "Erreur interne du serveur", error: error.message });
     }
 });
+
 
 app.put('/users/:id', (req, res) => {
     let id = req.params.id;
@@ -384,21 +388,23 @@ app.get('/admin/users', (req, res) => {
 });
 
 app.post('/admin/users', (req, res) => {
-    const { id, nom, mdp } = req.body;
+    const { id, nom, equipe } = req.body;
 
-    if (!id || !nom || !mdp || !role) {
+    // Vérification que tous les champs sont fournis
+    if (!id || !nom || !equipe) {
         return res.status(400).json({ message: "Données manquantes" });
     }
 
-    const sql = "INSERT INTO users (id, nom, mdp) VALUES (?, ?, ?, ?)";
-    bddConnection.query(sql, [id, nom, mdp], (err, result) => {
+    // Requête SQL avec le champ equipe
+    const sql = "INSERT INTO users (id, nom, equipe) VALUES (?, ?, ?)";
+    bddConnection.query(sql, [id, nom, equipe], (err, result) => {
         if (err) {
             console.error("Erreur lors de l'insertion :", err);
-            return res.status(500).json({ message: "Erreur serveur" });
+            return res.status(500).json({ message: "Erreur serveur", error: err.message });
         }
-        res.status(201).json({ message: "Utilisateur ajouté !" });
-    });
-});
+        res.status(201).json({ message: "Utilisateur ajouté avec succès !" });
+    }); 
+}); 
 
 app.get('/admin/users/:id', (req, res) => {
     const id = req.params.id;
