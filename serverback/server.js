@@ -32,10 +32,10 @@ const sqlInjectionProtection = (req, res, next) => {
 
 // Configuration de la connexion à PM2
 pm2.connect({
-    host: '192.168.64.175',
-    port:9100,
-    user: 'site1',
-    password: 'yuzu007',
+    host: 'localhost',
+    port:9000,
+    user: 'root',
+    password: '',
     database: 'classements'
 }, (err) => {
     if (err) {
@@ -79,9 +79,9 @@ app.use(sqlInjectionProtection); // Appliquer le middleware de protection contre
 
 // Configuration de la connexion à la base de données
 const bddConnection = mysql.createConnection({
-    host: '192.168.64.175',
-    user: 'site1',
-    password: 'yuzu007',
+    host: 'localhost',
+    user: 'root',
+    password: '',
     database: 'classements'
 });
 
@@ -459,7 +459,7 @@ app.delete('/admin/users/:id', (req, res) => {
 
 // Routes pour l'administration
 app.get('/admin/connexion', (req, res) => {
-    const sql = "SELECT * FROM Admin";
+    const sql = "SELECT * FROM admin";
     bddConnection.query(sql, (err, result) => {
         if (err) {
             console.error("Erreur SQL :", err);
@@ -480,7 +480,7 @@ app.get('/admin/connexion/:id', (req, res) => {
         console.error("Erreur : connexion à la base de données manquante.");
         return res.status(500).json({ message: "Erreur serveur : connexion DB manquante" });
     }
-    const sql = "SELECT * FROM Admin WHERE id = ?";
+    const sql = "SELECT * FROM admin WHERE id = ?";
     console.log("Requête SQL exécutée :", sql, "avec ID :", id);
     bddConnection.query(sql, [id], (err, result) => {
         if (err) {
@@ -505,7 +505,7 @@ app.post('/admin/connexion', async (req, res) => {
     try {
         const hashedmdp = await bcrypt.hash(mdp, 10); // Hachage du mot de passe
 
-        const query = "INSERT INTO Admin (nom, mdp, email) VALUES (?, ?, ?)";
+        const query = "INSERT INTO admin (nom, mdp, email) VALUES (?, ?, ?)";
         bddConnection.query(query, [nom, hashedmdp, email], (err, result) => {
             if (err) {
                 console.error(err);
@@ -528,7 +528,7 @@ app.put('/admin/connexion/:id', (req, res) => {
         return res.status(400).json({ error: "Tous les champs sont requis." });
     }
 
-    const query = "UPDATE Admin SET nom = ?, mdp = ?, email = ? WHERE id = ?";
+    const query = "UPDATE admin SET nom = ?, mdp = ?, email = ? WHERE id = ?";
     bddConnection.query(query, [nom, mdp, email, id], (err, result) => {
         if (err) {
             console.error(err);
@@ -540,7 +540,7 @@ app.put('/admin/connexion/:id', (req, res) => {
 
 app.delete('/admin/connexion/:id', (req, res) => {
     const id = req.params.id;
-    const query = "DELETE FROM Admin WHERE id = ?";
+    const query = "DELETE FROM admin WHERE id = ?";
     bddConnection.query(query, [id], (err, result) => {
         if (err) {
             console.error(err);
