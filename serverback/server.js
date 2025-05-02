@@ -32,10 +32,10 @@ const sqlInjectionProtection = (req, res, next) => {
 
 // Configuration de la connexion à PM2
 pm2.connect({
-    host: 'localhost',
+    host: '192.168.64.175',
     port:9000,
-    user: 'root',
-    password: '',
+    user: 'site1',
+    password: 'yuzu007',
     database: 'classements'
 }, (err) => {
     if (err) {
@@ -79,9 +79,9 @@ app.use(sqlInjectionProtection); // Appliquer le middleware de protection contre
 
 // Configuration de la connexion à la base de données
 const bddConnection = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: '',
+    host: '192.168.64.175',
+    user: 'site1',
+    password: 'yuzu007',
     database: 'classements'
 });
 
