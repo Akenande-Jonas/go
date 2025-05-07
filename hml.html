@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Classements Sportifs</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="logo">
+            <i class="fas fa-trophy"></i>
+            <h1>SportStats</h1>
+        </div>
+        <nav id="main-nav">
+            <ul>
+                <li><a href="#" data-section="home" class="active">Accueil</a></li>
+                <li><a href="#" data-section="classement">Classement</a></li>
+                <li><a href="#" data-section="matchs">Matchs</a></li>
+                <li><a href="#" data-section="equipes">Équipes</a></li>
+                <li id="nav-admin" class="hidden"><a href="#" data-section="admin">Administration</a></li>
+            </ul>
+        </nav>
+        <div class="auth-buttons">
+            <button id="btn-login" class="btn btn-primary">Connexion</button>
+            <button id="btn-register" class="btn btn-secondary">Inscription</button>
+            <div id="user-profile" class="hidden">
+                <span id="user-name"></span>
+                <button id="btn-logout" class="btn btn-danger">Déconnexion</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Home Section -->
+        <section id="home" class="section active">
+            <div class="hero">
+                <h2>Bienvenue sur SportStats</h2>
+                <p>Suivez en temps réel les matchs, les classements et les statistiques de vos équipes préférées.</p>
+                <div class="cta-buttons">
+                    <button class="btn btn-primary" data-nav="classement">Voir le classement</button>
+                    <button class="btn btn-secondary" data-nav="matchs">Derniers matchs</button>
+                </div>
+            </div>
+            
+            <div class="features">
+                <div class="feature-card">
+                    <i class="fas fa-chart-line"></i>
+                    <h3>Classements en direct</h3>
+                    <p>Consultez les classements mis à jour en temps réel après chaque match.</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-futbol"></i>
+                    <h3>Résultats des matchs</h3>
+                    <p>Suivez les résultats de tous les matchs de la saison.</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-users"></i>
+                    <h3>Gestion d'équipes</h3>
+                    <p>Explorez les informations détaillées sur chaque équipe.</p>
+                </div>
+            </div>
+            
+            <div class="quick-stats">
+                <h2>Aperçu rapide</h2>
+                <div class="stats-container">
+                    <div class="stats-card">
+                        <h3>Leaders</h3>
+                        <div id="leaders-preview" class="loading">
+                            <div class="loader"></div>
+                        </div>
+                    </div>
+                    <div class="stats-card">
+                        <h3>Derniers matchs</h3>
+                        <div id="recent-matches" class="loading">
+                            <div class="loader"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Classement Section -->
+        <section id="classement" class="section">
+            <h2>Classement</h2>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Rang</th>
+                            <th>Équipe</th>
+                            <th>J</th>
+                            <th>G</th>
+                            <th>N</th>
+                            <th>P</th>
+                            <th>BP</th>
+                            <th>BC</th>
+                            <th>Diff</th>
+                            <th>Pts</th>
+                        </tr>
+                    </thead>
+                    <tbody id="classement-table-body">
+                        <tr>
+                            <td colspan="10" class="loading-cell">
+                                <div class="loader"></div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Matchs Section -->
+        <section id="matchs" class="section">
+            <h2>Matchs</h2>
+            <div class="match-filter">
+                <input type="text" id="match-search" placeholder="Rechercher une équipe...">
+            </div>
+            <div id="match-list" class="match-container">
+                <div class="loader"></div>
+            </div>
+        </section>
+
+        <!-- Equipes Section -->
+        <section id="equipes" class="section">
+            <h2>Équipes</h2>
+            <div class="teams-grid" id="teams-grid">
+                <div class="loader"></div>
+            </div>
+        </section>
+
+        <!-- Admin Section -->
+        <section id="admin" class="section">
+            <h2>Administration</h2>
+            
+            <div class="admin-panel">
+                <div class="admin-tabs">
+                    <button class="tab-btn active" data-tab="tab-add-match">Ajouter un match</button>
+                    <button class="tab-btn" data-tab="tab-add-team">Ajouter une équipe</button>
+                </div>
+                
+                <div class="tab-content active" id="tab-add-match">
+                    <h3>Enregistrer un nouveau match</h3>
+                    <form id="add-match-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="equipe1">Équipe domicile</label>
+                                <select id="equipe1" name="equipe1" required>
+                                    <option value="">Sélectionner une équipe</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="but-equipe1">Buts</label>
+                                <input type="number" id="but-equipe1" name="but-equipe1" min="0" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="equipe2">Équipe extérieur</label>
+                                <select id="equipe2" name="equipe2" required>
+                                    <option value="">Sélectionner une équipe</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="but-equipe2">Buts</label>
+                                <input type="number" id="but-equipe2" name="but-equipe2" min="0" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Enregistrer le match</button>
+                    </form>
+                </div>
+                
+                <div class="tab-content" id="tab-add-team">
+                    <h3>Ajouter une nouvelle équipe</h3>
+                    <form id="add-team-form">
+                        <div class="form-group">
+                            <label for="nom-equipe">Nom de l'équipe</label>
+                            <input type="text" id="nom-equipe" name="nom-equipe" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Ajouter l'équipe</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modals -->
+    <div id="login-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Connexion</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-nom">Nom d'utilisateur</label>
+                    <input type="text" id="login-nom" name="nom" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-mdp">Mot de passe</label>
+                    <input type="password" id="login-mdp" name="mdp" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Se connecter</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="register-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Inscription</h2>
+            <form id="register-form">
+                <div class="form-group">
+                    <label for="register-nom">Nom d'utilisateur</label>
+                    <input type="text" id="register-nom" name="nom" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-mdp">Mot de passe</label>
+                    <input type="password" id="register-mdp" name="mdp" required minlength="6">
+                </div>
+                <div class
